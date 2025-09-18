@@ -67,9 +67,9 @@ switch ($uriSegments[0] ?? '') {
         // Si el primer segmento es 'api', entonces el recurso principal es el segundo segmento.
         $resource = $uriSegments[1] ?? '';
         // El ID será el tercer segmento.
-        $id = $uriSegments[2] ?? null;
+        $action = $uriSegments[2] ?? null;
         // Y la acción (como 'by-type'/'por-tipo') será el cuarto segmento.
-        $action = $uriSegments[3] ?? null;
+        $id = $uriSegments[3] ?? null;
 
         // Leer el cuerpo de la solicitud JSON para POST/PUT
         $input = json_decode(file_get_contents('php://input'), true);
@@ -100,23 +100,26 @@ switch ($uriSegments[0] ?? '') {
                 jsonResponse(['message' => 'Ruta de usuario no válida'], 404);
                 break;
 
-            case 'habitaciones': // Usando el nombre en castellano
-                if ($requestMethod === 'GET') {
-                    if ($id && $action === 'por-tipo') { // /api/habitaciones/por-tipo/{tipo}
-                        handleGetRoomsByType($habitacionRepository, $id); // $id aquí es el tipo
-                    } elseif ($id) { // /api/habitaciones/{id}
-                        handleGetRoomById($habitacionRepository, $id);
-                    } else { // /api/habitaciones
-                        handleGetAllRooms($habitacionRepository);
+                case 'habitaciones':
+                    if ($requestMethod === 'GET') {
+                        if ($action === 'por-tipo' && $id) { 
+                            // /api/habitaciones/por-tipo/{tipo}
+                            handleGetRoomsByType($habitacionRepository, $id); 
+                        } elseif ($action && is_numeric($action)) { 
+                            // /api/habitaciones/{id}
+                            handleGetRoomById($habitacionRepository, $action);
+                        } else { 
+                            // /api/habitaciones
+                            handleGetAllRooms($habitacionRepository);
+                        }
+                    } elseif ($requestMethod === 'POST' && !$action) {
+                        handleCreateRoom($habitacionRepository, $input); // Requiere ser admin
+                    } elseif ($requestMethod === 'DELETE' && $action && is_numeric($action)) {
+                        handleDeleteRoom($habitacionRepository, $action); // Requiere ser admin
+                    } else {
+                        jsonResponse(['message' => 'Ruta de habitación no válida'], 404);
                     }
-                } elseif ($requestMethod === 'POST' && !$id) {
-                    handleCreateRoom($habitacionRepository, $input); // Requiere ser admin
-                } elseif ($requestMethod === 'DELETE' && $id) {
-                    handleDeleteRoom($habitacionRepository, $id); // Requiere ser admin
-                }
-                jsonResponse(['message' => 'Ruta de habitación no válida'], 404);
-                break;
-
+                    break;
             case 'reservas': // Usando el nombre en castellano
                 if ($requestMethod === 'POST' && !$id) {
                     handleCreateReservation($reservaRepository, $input);

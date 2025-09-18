@@ -73,21 +73,37 @@ public function buscarHabitacionPorNumero($numero)
     return null;
 }
 
+public function buscarPorTipo($tipo)
+{
+    $stmt = $this->db->prepare("SELECT id, numero, tipo, precio FROM habitaciones WHERE LOWER(tipo) = LOWER(?)");
+    $stmt->execute([$tipo]);
+    $habitacionesData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    public function buscarPorTipo($tipo)
-    {
-        $stmt = $this->db->prepare("SELECT id, numero, tipo, precio FROM habitaciones WHERE LOWER(tipo) = LOWER(?)");
-        $stmt->execute([$tipo]);
-        $resultadosData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $resultados = [];
-        foreach ($resultadosData as $data) {
-            $habitacion = new Habitacion($data['numero'], $data['tipo'], $data['precio']);
-            // $habitacion->setId($data['id']);
-            $resultados[] = $habitacion;
-        }
-        return $resultados;
+    $habitaciones = [];
+    foreach ($habitacionesData as $data) {
+        $habitacion = new Habitacion($data['id'], $data['numero'], $data['tipo'], $data['precio']);
+        $habitaciones[] = $habitacion;
     }
+    return $habitaciones;
+}
+
+   public function obtenerHabitacionPorId($id)
+{
+    $stmt = $this->db->prepare("SELECT id, numero, tipo, precio 
+                                 FROM habitaciones 
+                                 WHERE id = ?");
+    $stmt->execute([$id]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($data) {
+        $habitacion = new Habitacion($data['id'],$data['numero'], $data['tipo'], $data['precio']);
+        $habitacion->setId($data['id']); // si tu clase lo soporta
+        return $habitacion;
+    }
+
+    return null; // si no encontró nada
+}
+
 
     // Para actualizar, necesitaríamos un identificador único. 
     // Si 'numero' es único en la BD, se puede usar, si no, el ID de la BD.
