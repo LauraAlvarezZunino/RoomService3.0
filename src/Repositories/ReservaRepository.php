@@ -136,10 +136,17 @@ class ReservaRepository
     public function obtenerReservasPorUsuarioId($usuarioId)
     {
         // Unimos con habitaciones para obtener los datos completos de la habitación
-        $stmt = $this->db->prepare("SELECT r.id, r.fecha_check_in, r.fecha_check_out, r.costo, r.usuario_id, h.id AS habitacion_db_id, h.numero AS habitacion_numero, h.tipo AS habitacion_tipo, h.precio AS habitacion_precio FROM reservas r JOIN habitaciones h ON r.habitacion_id = h.id WHERE r.usuario_id = ?");
+        $stmt = $this->db->prepare("
+            SELECT r.id, r.fecha_inicio, r.fecha_fin, r.costo, r.usuario_id,
+                   h.id AS habitacion_db_id, h.numero AS habitacion_numero,
+                   h.tipo AS habitacion_tipo, h.precio AS habitacion_precio
+            FROM reservas r
+            JOIN habitaciones h ON r.habitacion_id = h.id
+            WHERE r.usuario_id = ?
+        ");
         $stmt->execute([$usuarioId]);
         $reservasData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+    
         $reservas = [];
         foreach ($reservasData as $data) {
             // Reconstruir el objeto Habitacion
@@ -149,19 +156,18 @@ class ReservaRepository
                 $data['habitacion_tipo'],
                 $data['habitacion_precio']
             );
-
+    
             $reservas[] = new Reserva(
                 $data['id'],
-                $data['fecha_check_in'],
-                $data['fecha_check_out'],
-                $habitacion, // Pasamos el objeto Habitacion reconstruido
+                $data['fecha_inicio'],  // corregido
+                $data['fecha_fin'],     // corregido
+                $habitacion,
                 $data['costo'],
-                $data['usuario_id'] // Ahora pasamos el ID del usuario
+                $data['usuario_id']
             );
         }
         return $reservas;
     }
-
     /**
      * Elimina una reserva por su ID.
      * @param int $id
