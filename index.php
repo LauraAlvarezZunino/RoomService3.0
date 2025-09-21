@@ -124,23 +124,25 @@ switch ($uriSegments[0] ?? '') {
                             jsonResponse(['message' => 'Ruta de habitación no válida'], 404);
                         }
                         break;
-            case 'reservas': // Usando el nombre en castellano
-                if ($requestMethod === 'POST' && !$id) {
-                    handleCreateReservation($reservaRepository, $input);
-                } elseif ($requestMethod === 'GET' && $id) { // /api/reservas/{user_id} o /api/reservas/todas (para admin)
-                     if ($id === 'todas') { // Ejemplo para admin
-                         handleGetAllReservations($reservaRepository);
-                     } else {
-                         handleGetUserReservations($reservaRepository, $id);
-                     }
-                } elseif ($requestMethod === 'PUT' && $id) {
-                    handleUpdateReservation($reservaRepository, $habitacionRepository, $notificacionRepository, $id, $input);
-                } elseif ($requestMethod === 'DELETE' && $id) {
-                    handleCancelReservation($reservaRepository, $notificacionRepository, $id);
-                }
-                jsonResponse(['message' => 'Ruta de reserva no válida'], 404);
-                break;
-
+                    case 'reservas': 
+                        if ($requestMethod === 'POST' && !$id) {
+                            handleCreateReservation($reservaRepository, $input);
+                            return;
+                        } elseif ($requestMethod === 'GET' && !$id) { 
+                            handleGetAllReservations($reservaRepository); // /api/reservas
+                            return;
+                        } elseif ($requestMethod === 'GET' && $id) { 
+                            handleGetUserReservations($reservaRepository, $id); // /api/reservas/{user_id}
+                            return;
+                        } elseif ($requestMethod === 'PUT' && $id) {
+                            handleUpdateReservation($reservaRepository, $habitacionRepository, $notificacionRepository, $id, $input);
+                            return;
+                        } elseif ($requestMethod === 'DELETE' && $id) {
+                            handleCancelReservation($reservaRepository, $notificacionRepository, $id);
+                            return;
+                        }
+                        jsonResponse(['message' => 'Ruta de reserva no válida'], 404);
+                        break;
             case 'notificaciones': // Usando el nombre en castellano
                 if ($requestMethod === 'GET' && $id) { // /api/notificaciones/{user_id}
                     handleGetUserNotifications($notificacionRepository, $id);
