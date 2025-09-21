@@ -213,5 +213,37 @@ class ReservaRepository
         return $count == 0; // Si count es 0, significa que no hay reservas que se solapen
     }
 
+    public function obtenerTodasLasReservas()
+{
+    $stmt = $this->db->prepare("SELECT r.id, r.fecha_inicio, r.fecha_fin, r.costo, r.usuario_id,
+                                       h.id AS habitacion_db_id, h.numero AS habitacion_numero, 
+                                       h.tipo AS habitacion_tipo, h.precio AS habitacion_precio
+                                FROM reservas r
+                                JOIN habitaciones h ON r.habitacion_id = h.id");
+    $stmt->execute();
+    $reservasData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $reservas = [];
+    foreach ($reservasData as $data) {
+        $habitacion = new Habitacion(
+            $data['habitacion_db_id'],
+            $data['habitacion_numero'],
+            $data['habitacion_tipo'],
+            $data['habitacion_precio']
+        );
+
+        $reservas[] = new Reserva(
+            $data['id'],
+            $data['fecha_inicio'],
+            $data['fecha_fin'],
+            $habitacion,
+            $data['costo'],
+            $data['usuario_id']
+        );
+    }
+
+    return $reservas;
+}
+
     // ... cualquier otro método que tengas en ReservaRepository ...
 }
