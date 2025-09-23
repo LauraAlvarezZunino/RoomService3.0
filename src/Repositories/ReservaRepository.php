@@ -26,7 +26,8 @@ class ReservaRepository
      * @param Reserva $reserva
      * @return bool
      */
-    public function agregarReserva(Reserva $reserva)
+    /*
+     public function agregarReserva(Reserva $reserva)
     {
         // Primero, verificar si la habitación está disponible para las fechas dadas
         // Asumiendo que verificarDisponibilidad existe y ahora toma fechas y habitacion ID
@@ -41,7 +42,7 @@ class ReservaRepository
         }
 
         try {
-            $stmt = $this->db->prepare("INSERT INTO reservas (fecha_check_in, fecha_check_out, habitacion_id, costo, usuario_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $this->db->prepare("INSERT INTO reservas (fecha_inicio, fecha_fin, habitacion_id, costo, usuario_id, fecha_creacion) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([
                 $reserva->getFechaInicio(),
                 $reserva->getFechaFin(),
@@ -57,6 +58,50 @@ class ReservaRepository
             return false;
         }
     }
+        */
+
+        public function agregarReserva(Reserva $reserva)
+        {
+            if (!$this->verificarDisponibilidad(
+                $reserva->getHabitacion()->getId(),
+                $reserva->getFechaInicio(),
+                $reserva->getFechaFin(),
+                null
+            )) {
+                echo "La habitación no está disponible para las fechas seleccionadas.\n";
+                return false;
+            }
+        
+            try {
+                // Calcular cantidad de días
+                $fechaInicio = new DateTime($reserva->getFechaInicio());
+                $fechaFin = new DateTime($reserva->getFechaFin());
+                $dias = $fechaInicio->diff($fechaFin)->days;
+        
+                // Calcular costo
+                $costo = $reserva->getHabitacion()->getPrecio() * $dias;
+        
+                $stmt = $this->db->prepare("
+                    INSERT INTO reservas (fecha_inicio, fecha_fin, habitacion_id, costo, usuario_id, fecha_creacion) 
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([
+                    $reserva->getFechaInicio(),
+                    $reserva->getFechaFin(),
+                    $reserva->getHabitacion()->getId(),
+                    $costo,
+                    $reserva->getUsuarioId()
+                ]);
+        
+                $reserva->setId($this->db->lastInsertId());
+                $reserva->setCosto($costo); // Guardamos también el costo en el objeto
+                return true;
+        
+            } catch (PDOException $e) {
+                echo "Error al agregar reserva: " . $e->getMessage() . "\n";
+                return false;
+            }
+        }
 
     /**
      * Obtiene una reserva por su ID.
@@ -193,6 +238,8 @@ class ReservaRepository
      * @param int|null $reservaIdToIgnore Opcional: El ID de una reserva existente que debe ser ignorada (útil para modificaciones).
      * @return bool True si la habitación está disponible, false en caso contrario.
      */
+
+     /* comento porque reemplazo por unafuncion que si toma correctamente los valores de la tabla de BD
     public function verificarDisponibilidad($habitacionId, $fechaInicio, $fechaFin, $reservaIdToIgnore = null)
     {
         $sql = "SELECT COUNT(*) FROM reservas
@@ -212,6 +259,34 @@ class ReservaRepository
 
         return $count == 0; // Si count es 0, significa que no hay reservas que se solapen
     }
+        */
+
+        public function verificarDisponibilidad($habitacionId, $fechaInicio, $fechaFin, $reservaId = null)
+        {
+            $query = "SELECT COUNT(*) FROM reservas 
+                      WHERE habitacion_id = :habitacionId
+                      AND (
+                          (fecha_inicio <= :fechaFin AND fecha_fin >= :fechaInicio)
+                      )";
+        
+            if ($reservaId) {
+                $query .= " AND id != :reservaId";
+            }
+        
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':habitacionId', $habitacionId, PDO::PARAM_INT);
+            $stmt->bindParam(':fechaInicio', $fechaInicio);
+            $stmt->bindParam(':fechaFin', $fechaFin);
+        
+            if ($reservaId) {
+                $stmt->bindParam(':reservaId', $reservaId, PDO::PARAM_INT);
+            }
+        
+            $stmt->execute();
+            $count = $stmt->fetchColumn();
+        
+            return $count == 0; // true = disponible, false = ocupada
+        }
 
     public function obtenerTodasLasReservas()
 {

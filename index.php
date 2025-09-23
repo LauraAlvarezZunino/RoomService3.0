@@ -383,6 +383,7 @@ function handleDeleteRoom(HabitacionRepository $habitacionRepository, $id)
     }
 }
 
+/* comento esta funcion ya que no estaría calculando el costo automaticamente
 function handleCreateReservation(ReservaRepository $reservaRepository, $data)
 {
     // Requiere autenticación: El usuario debe estar logueado para crear una reserva
@@ -419,6 +420,64 @@ function handleCreateReservation(ReservaRepository $reservaRepository, $data)
         jsonResponse(['message' => 'Reserva creada exitosamente.', 'id' => $reserva->getId()]);
     } else {
         jsonResponse(['error' => 'No se pudo crear la reserva. La habitación podría no estar disponible para esas fechas.'], 409); // Conflict
+    }
+}
+*/
+
+function handleCreateReservation(ReservaRepository $reservaRepository, $data)
+{
+    // Requiere autenticación: El usuario debe estar logueado para crear una reserva
+    $fechaInicio = $data['fechaInicio'] ?? null;
+    $fechaFin = $data['fechaFin'] ?? null;
+    $habitacionId = $data['habitacionId'] ?? null;
+    $usuarioId = $data['usuarioId'] ?? null; // En producción debería salir del usuario autenticado
+
+    if (!ValidationHelper::isValidDateFormat($fechaInicio) || 
+        !ValidationHelper::isValidDateFormat($fechaFin) ||
+        !ValidationHelper::isEndDateAfterStartDate($fechaInicio, $fechaFin) ||
+        !ValidationHelper::isValidNumeroEntero($habitacionId) || 
+        !ValidationHelper::isValidNumeroEntero($usuarioId)) {
+        jsonResponse(['error' => 'Datos de reserva incompletos o inválidos.'], 400);
+    }
+
+    // Verificar existencia de usuario y habitación
+    global $usuarioRepository, $habitacionRepository;
+    $usuario = $usuarioRepository->obtenerUsuarioPorId($usuarioId);
+    $habitacion = $habitacionRepository->obtenerHabitacionPorId($habitacionId);
+
+    if (!$usuario || !$habitacion) {
+        jsonResponse(['error' => 'Usuario o habitación no encontrados.'], 404);
+    }
+
+    // Calcular cantidad de días
+    $inicio = new DateTime($fechaInicio);
+    $fin = new DateTime($fechaFin);
+    $dias = $inicio->diff($fin)->days;
+
+    if ($dias <= 0) {
+        jsonResponse(['error' => 'El rango de fechas no es válido.'], 400);
+    }
+
+    // Calcular costo = precio habitación × cantidad de días
+    $costo = $habitacion->getPrecio() * $dias;
+
+    // Crear la reserva
+    $reserva = new Reserva(null, $fechaInicio, $fechaFin, $habitacion, $costo, $usuarioId);
+
+    if ($reservaRepository->agregarReserva($reserva)) {
+        // Opcional: generar notificación
+        global $notificacionRepository;
+        $mensaje = "Tu reserva ID: {$reserva->getId()} para la habitación {$habitacion->getNumero()} ha sido creada. Costo total: $costo.";
+        $notificacion = new Notificacion(null, $reserva->getId(), $mensaje, $usuarioId);
+        $notificacionRepository->guardarNotificacion($notificacion);
+
+        jsonResponse([
+            'message' => 'Reserva creada exitosamente.',
+            'id' => $reserva->getId(),
+            'costo' => $costo
+        ]);
+    } else {
+        jsonResponse(['error' => 'No se pudo crear la reserva. La habitación podría no estar disponible para esas fechas.'], 409);
     }
 }
 

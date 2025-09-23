@@ -186,5 +186,26 @@ class UsuarioRepository
         }
     }
 
+    public function autenticarUsuario($dni, $clave)
+{
+    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE dni = ?");
+    $stmt->execute([$dni]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($data && password_verify($clave, $data['clave'])) {
+        // Devuelve un objeto Usuario si las credenciales son correctas
+        return new Usuario(
+            $data['id'],
+            $data['nombre_apellido'],
+            $data['dni'],
+            $data['email'],
+            $data['telefono'],
+            $data['clave']
+        );
+    }
+
+    // Si no coincide, devolvemos null
+    return null;
+}
    
 }
