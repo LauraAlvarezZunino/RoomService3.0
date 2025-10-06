@@ -1,4 +1,4 @@
-<?php
+
 
 // 1. Configuración inicial y Autoloading/Includes
 ini_set('display_errors', 1);

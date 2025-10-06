@@ -7,8 +7,8 @@ class Database {
     private function __construct() {
         $host = 'localhost'; 
         $db   = 'room_service'; 
-        $user = 'maria';
-        $pass = '1234';
+        $user = 'root';
+        $pass = 'admin123';
         $charset = 'utf8mb4';
 
         $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
