@@ -188,7 +188,7 @@ class UsuarioRepository
 
     public function autenticarUsuario($dni, $clave)
 {
-    $stmt = $this->db->prepare("SELECT * FROM usuarios WHERE dni = ?");
+    $stmt = $this->db->prepare("SELECT id, nombre_apellido, dni, email, telefono, clave, es_admin FROM usuarios WHERE dni = ?");
     $stmt->execute([$dni]);
     $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -200,7 +200,8 @@ class UsuarioRepository
             $data['dni'],
             $data['email'],
             $data['telefono'],
-            $data['clave']
+            $data['clave'],
+            $data['es_admin']  // Pasa es_admin al constructor
         );
     }
 

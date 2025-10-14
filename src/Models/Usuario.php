@@ -8,8 +8,9 @@ class Usuario
     protected $email;
     protected $telefono;
     protected $clave;
- private $esAdmin;
-    public function __construct($id = null, $nombreApellido = null, $dni = null, $email = null, $telefono = null, $clave = null,$esAdmin = 0)
+    private $esAdmin;
+
+    public function __construct($id = null, $nombreApellido = null, $dni = null, $email = null, $telefono = null, $clave = null, $esAdmin = 0)
     {
         $this->id = $id;
         $this->nombreApellido = $nombreApellido;
@@ -17,7 +18,7 @@ class Usuario
         $this->email = $email;
         $this->telefono = $telefono;
         $this->clave = $clave;
-        $this->esAdmin = (bool) $esAdmin;
+        $this->esAdmin = isset($esAdmin) ? (bool)$esAdmin : false;
     }
 
     // Getters y Setters
